@@ -162,7 +162,7 @@ namespace DepRos
             this.ShouldBeAttached = true;
             this.ShouldBeReadOnly = attr.ReadOnly;
             this.Inherits = attr.Inherits;
-            this.HasDefaultValue = attr.DefaultValue != null;
+            this.DefaultValueLocation = attr.DefaultValueLocation;
         }
         public Location SourceLocation { get; }
         public ClassData Owner { get; }
@@ -198,7 +198,7 @@ namespace DepRos
         /// <summary>
         /// True when our class has <c>static</c> or <c>const</c> field named '<c>defaultFor{this.Name}</c>'.
         /// </summary>
-        public bool HasDefaultValue { get; private set; }
+        public bool HasDefaultValue => DefaultValueLocation is not null;
 
         /// <summary>
         /// True when <see cref="HasDefaultValue"/> is <c>true</c> and the field is static but not read-only.
@@ -208,12 +208,22 @@ namespace DepRos
         /// <summary>
         /// True when our class has '<c>{this.Type} Coerce{this.Name}(providedValue)</c>' method.
         /// </summary>
-        public bool HasCoerceCallback { get; private set; }
+        public bool HasCoerceCallback => CoerceCallbackLocation is not null;
 
         /// <summary>
         /// True when our class has '<c>bool Validate{this.Name}(providedValue)</c>' method.
         /// </summary>
         public bool HasValidateCallback => ValidateCallbackLocation is not null;
+
+        /// <summary>
+        /// True when our class has '<c>void On{this.Name}Changed(oldValue, newValue)</c>' method.
+        /// </summary>
+        public bool HasPropertyChangedHandler => PropertyChangedHandlerLocation is not null;
+
+        /// <summary>
+        /// Location of default value field in source code.
+        /// </summary>
+        public Location? DefaultValueLocation { get; private set; }
 
         /// <summary>
         /// Location of '<c>bool Coerce{this.Name}(providedValue)</c>' method in source code.
@@ -226,9 +236,9 @@ namespace DepRos
         public Location? ValidateCallbackLocation { get; private set; }
 
         /// <summary>
-        /// True when our class has '<c>void On{this.Name}Changed(oldValue, newValue)</c>' method.
+        /// Location of '<c>void On{this.Name}Changed(oldValue, newValue)</c>' method in source code.
         /// </summary>
-        public bool HasPropertyChangedHandler { get; private set; }
+        public Location? PropertyChangedHandlerLocation { get; private set; }
         #endregion
 
         #region Output properties
@@ -258,11 +268,11 @@ namespace DepRos
         #endregion
 
         public void MarkHavingDuplicate() => HasMultipleAttributes = true;
-        public void MarkHavingDefaultValue() => HasDefaultValue = true;
+        public void MarkHavingDefaultValue(Location location) => DefaultValueLocation = location;
         public void MarkHavingWriteableDefaultValue() => IsDefaultValueIsWriteable = true;
-        public void MarkHavingChangedHandler() => HasPropertyChangedHandler = true;
-        public void MarkHavingCoerceCallback() => HasCoerceCallback = true;
-        public void MarkHavingValidationCallback() => HasValidateCallback = true;
+        public void MarkHavingChangedHandler(Location location) => PropertyChangedHandlerLocation = location;
+        public void MarkHavingCoerceCallback(Location location) => CoerceCallbackLocation = location;
+        public void MarkHavingValidationCallback(Location location) => ValidateCallbackLocation = location;
 
         public void GenerateDependencyProperty(StreamWriter writer) {
             switch (Owner.Toolkit) {

@@ -62,13 +62,13 @@ namespace DepRos
                     }
 
                     if (prop.IsDefaultValueIsWriteable)
-                        context.ReportDiagnostic(Diagnostic.Create(Diagnostics.DefaultValueIsWriteable, prop.SourceLocation, prop.Name, prop.Owner.Name));
+                        context.ReportDiagnostic(Diagnostic.Create(Diagnostics.DefaultValueIsWriteable, prop.DefaultValueLocation, prop.Name, prop.Owner.Name));
 
                     if (prop.HasCoerceCallback && classData.Toolkit != Toolkit.Avalonia && classData.Toolkit != Toolkit.Wpf)
-                        context.ReportDiagnostic(Diagnostic.Create(Diagnostics.CoercionIsUnsupported, prop.SourceLocation, prop.Name, prop.Owner.FullName));
+                        context.ReportDiagnostic(Diagnostic.Create(Diagnostics.CoercionIsUnsupported, prop.CoerceCallbackLocation, prop.Name, prop.Owner.FullName));
 
                     if (prop.HasValidateCallback && classData.Toolkit != Toolkit.Wpf)
-                        context.ReportDiagnostic(Diagnostic.Create(Diagnostics.ValidationIsUnsupported, prop.SourceLocation, prop.Name, prop.Owner.FullName));
+                        context.ReportDiagnostic(Diagnostic.Create(Diagnostics.ValidationIsUnsupported, prop.ValidateCallbackLocation, prop.Name, prop.Owner.FullName));
 
                     if (prop.Inherits && !prop.ShouldBeAttached)
                         context.ReportDiagnostic(Diagnostic.Create(Diagnostics.NonAttachedButInheritable, prop.SourceLocation, prop.Name, prop.Owner.FullName));

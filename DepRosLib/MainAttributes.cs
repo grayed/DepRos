@@ -69,6 +69,7 @@ namespace DepRos
         public BindingMode BindingMode { get; set; }
         internal TypeInfo? TypeInfo { get; set; }
         public object? DefaultValue { get; set; }
+        public Location? DefaultValueLocation { get; set; }
         public bool ReadOnly { get; set; }
 
         public bool IsValid => !string.IsNullOrEmpty(Name) && TypeInfo is not null;
@@ -89,6 +90,7 @@ namespace DepRos
                     break;
                 case nameof(DefaultValue):
                     DefaultValue = model.GetConstantValue(expr).Value;
+                    DefaultValueLocation = expr.GetLocation();
                     break;
                 case nameof(Inherits):
                     Inherits = (bool)(model.GetConstantValue(expr).Value ?? false);

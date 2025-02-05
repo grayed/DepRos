@@ -106,9 +106,9 @@ namespace DepRos
             var classPropertiesByName = new Dictionary<string, PropertyData>();
             var classProperties = new List<PropertyData>();
             var defaultValuesFoundFor = new List<(string, FieldDeclarationSyntax)>();
-            var coerceCallbacksFoundFor = new List<string>();
-            var validateCallbacksFoundFor = new List<string>();
-            var propertyChangedHandlersFoundFor = new List<string>();
+            var coerceCallbacksFoundFor = new List<(string, MethodDeclarationSyntax)>();
+            var validateCallbacksFoundFor = new List<(string, MethodDeclarationSyntax)>();
+            var propertyChangedHandlersFoundFor = new List<(string, MethodDeclarationSyntax)>();
 
             var withAttachedProperties = Node.FindAll(typeof(WithAttachedPropertyAttribute<string>).GetGenericTypeDefinition().Name);
             foreach (var aaNode in withAttachedProperties) {
@@ -153,11 +153,11 @@ namespace DepRos
                     var methodName = methodNode.Identifier.ValueText;
                     string? propName;
                     if ((propName = CoerceCallbackNameDecoration.Strip(methodName)) != null) {
-                        coerceCallbacksFoundFor.Add(propName);
+                        coerceCallbacksFoundFor.Add((propName, methodNode));
                     } else if ((propName = ValidateCallbackNameDecoration.Strip(methodName)) != null) {
-                        validateCallbacksFoundFor.Add(propName);
+                        validateCallbacksFoundFor.Add((propName, methodNode));
                     } else if ((propName = PropertyChangedHandlerNameDecoration.Strip(methodName)) != null) {
-                        propertyChangedHandlersFoundFor.Add(propName);
+                        propertyChangedHandlersFoundFor.Add((propName, methodNode));
                     }
                     break;
                 }
@@ -165,67 +165,28 @@ namespace DepRos
 
             foreach (var (name, fieldNode) in defaultValuesFoundFor)
                 if (classPropertiesByName.TryGetValue(name, out var propData)) {
-                    propData.MarkHavingDefaultValue();
+                    propData.MarkHavingDefaultValue(fieldNode.GetLocation());
                     if (!fieldNode.Modifiers.Any(SyntaxKind.ConstKeyword) &&
                         !fieldNode.Modifiers.Any(SyntaxKind.ReadOnlyKeyword)) {
                         propData.MarkHavingWriteableDefaultValue();
                     }
                 }
 
-            foreach (var name in coerceCallbacksFoundFor)
+            foreach (var (name, method) in coerceCallbacksFoundFor)
                 if (classPropertiesByName.TryGetValue(name, out var propData))
-                    propData.MarkHavingCoerceCallback();
+                    propData.MarkHavingCoerceCallback(method.GetLocation());
 
-            foreach (var name in validateCallbacksFoundFor)
+            foreach (var (name, method) in validateCallbacksFoundFor)
                 if (classPropertiesByName.TryGetValue(name, out var propData))
-                    propData.MarkHavingValidationCallback();
+                    propData.MarkHavingValidationCallback(method.GetLocation());
 
-            foreach (var name in propertyChangedHandlersFoundFor)
+            foreach (var (name, method) in propertyChangedHandlersFoundFor)
                 if (classPropertiesByName.TryGetValue(name, out var propData))
-                    propData.MarkHavingChangedHandler();
+                    propData.MarkHavingChangedHandler(method.GetLocation());
+
+            // TODO: Warn about unused callbacks and default values?
 
             return classProperties;
         }
-
-//        private static DependencyPropertyAttribute GetDependencyPropertyAttributeFor(PropertyDeclarationSyntax propertyNode, GeneratorSyntaxContext context) {
-//            foreach (var alist in propertyNode.AttributeLists)
-//                foreach (var attrNode in alist.Attributes) {
-//                    var type = context.SemanticModel.GetTypeInfo(attrNode).Type;
-//                    if (type.TypeKind == TypeKind.Class && type.Name == nameof(DependencyPropertyAttribute)) {
-//                        return attrNode;
-//                    }
-//                }
-//            return null;
-
-//found:
-//            object readOnlyModeVal = null;
-//            if (depPropAttr.ArgumentList != null) {
-//                for (int i = 0; i < depPropAttr.ArgumentList.Arguments.Count; i++) {
-//                    AttributeArgumentSyntax arg = depPropAttr.ArgumentList.Arguments[i];
-//                    if (arg.NameColon?.Name.ToString() is string nameBeforeColon) {
-//                        if (string.Equals(nameBeforeColon, nameof(DependencyPropertyAttribute.ReadWriteMode), StringComparison.InvariantCultureIgnoreCase)) {
-//                            readOnlyModeVal = context.SemanticModel.GetConstantValue(arg.Expression);
-//                        }
-//                    } else if (arg.NameEquals?.Name.ToString() is string nameBeforeEquals) {
-//                        if (nameBeforeEquals == nameof(DependencyPropertyAttribute.ReadWriteMode)) {
-//                            readOnlyModeVal = context.SemanticModel.GetConstantValue(arg.Expression);
-//                        }
-//                    } else {
-//                        if (i == 0) {
-//                            readOnlyModeVal = context.SemanticModel.GetConstantValue(arg.Expression);
-//                        }
-//                    }
-//                }
-//            }
-
-//            ReadWriteMode readWriteMode = default;
-//            if (readOnlyModeVal != null &&
-//                !Enum.TryParse(readOnlyModeVal.ToString(), out readWriteMode))
-//                return null;    // TODO warn
-//            return new DependencyPropertyAttribute(readWriteMode);
-
-//            return new DependencyPropertyAttribute();
-//        }
-
     }
 }
