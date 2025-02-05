@@ -28,8 +28,7 @@ namespace DepRos
         }
 
         public void Execute(GeneratorExecutionContext context) {
-            var reciever = context.SyntaxContextReceiver as DepRosSyntaxContextReciever;
-            if (reciever is null)
+            if (context.SyntaxContextReceiver is not DepRosSyntaxContextReciever reciever)
                 return;
 
             foreach (var classData in reciever.ClassesToProceed) {

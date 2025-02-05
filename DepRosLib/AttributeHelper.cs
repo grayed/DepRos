@@ -25,14 +25,16 @@ namespace DepRos
         }
 
         public static IEnumerable<AttributeSyntax> FindAll(this MemberDeclarationSyntax of, string attrName) {
-            if (!attrName.EndsWith("Attribute"))
-                throw new ArgumentException("invalid attribute name", nameof(attrName));
+            var isTemplated = attrName.EndsWith("`1");
+            var expectedEnd = isTemplated ? "Attribute`1" : "Attribute";
+            if (!attrName.EndsWith(expectedEnd))
+                throw new ArgumentException($"invalid attribute name '{attrName}'", nameof(attrName));
 
             // add support for fully qualified names
             foreach (var attrsList in of.AttributeLists)
                 foreach (var attr in attrsList.Attributes) {
                     var name = attr.Name.ToString();
-                    if (!name.EndsWith("Attribute"))
+                    if (!name.EndsWith(expectedEnd))
                         name += "Attribute";
                     if (name == attrName)
                         yield return attr;

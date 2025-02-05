@@ -80,7 +80,8 @@ namespace DepRos
             return name == type.Name;
         }
 
-        protected PropertyData(GeneratorSyntaxContext context, ClassData owner, MemberDeclarationSyntax memberNode, CSharpSyntaxNode declNode, Type expectedAttrType) {
+#pragma warning disable CS8618      // constructors calling this one take care about Name and other properties
+        private PropertyData(GeneratorSyntaxContext context, ClassData owner, MemberDeclarationSyntax memberNode, CSharpSyntaxNode declNode, Type expectedAttrType) {
             this.SourceLocation = declNode.GetLocation();
             this.Owner = owner;
 
@@ -103,6 +104,7 @@ namespace DepRos
                     }
                 }
         }
+#pragma warning restore CS8618
 
         /// <summary>
         /// Willing to generate usual (non-attached) dependency property based on auto property.
@@ -115,8 +117,7 @@ namespace DepRos
             var symbolInfo = context.SemanticModel.GetSymbolInfo(propNode);
             this.Name = propNode.Identifier.ValueText;
             this.Getter = propNode.ExpressionBody?.Expression;
-            if (this.Getter is null)
-                this.Getter = propNode.AccessorList?.Accessors.FirstOrDefault(accessor => accessor.IsKind(SyntaxKind.GetAccessorDeclaration));
+            this.Getter ??= propNode.AccessorList?.Accessors.FirstOrDefault(accessor => accessor.IsKind(SyntaxKind.GetAccessorDeclaration));
             this.Setter = propNode.AccessorList?.Accessors.FirstOrDefault(accessor => accessor.IsKind(SyntaxKind.SetAccessorDeclaration));
             this.TypeName = propNode.Type.ToString();
 
@@ -156,7 +157,7 @@ namespace DepRos
             this.SourceLocation = attachedAttrNode.GetLocation();
             this.Owner = owner;
             
-            var attr = new AttachedPropertyInfo(attachedAttrNode, context)!;
+            var attr = new AttachedPropertyInfo(attachedAttrNode, context);
             this.Name = attr.Name;
             this.TypeName = attr.TypeInfo!.Value.Type!.DeclaringSyntaxReferences.First(sr => sr.GetSyntax() is TypeSyntax).GetSyntax().ToString();
             this.ShouldBeAttached = true;
