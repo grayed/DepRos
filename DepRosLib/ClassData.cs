@@ -87,6 +87,7 @@ namespace DepRos
         }
 
         private void StartClassGeneration(StreamWriter writer) {
+            writer.WriteLine("#nullable enable");
             writer.WriteLine(Usings.ToFullString());
 
             if (Namespace.Length > 0) {
@@ -100,6 +101,7 @@ namespace DepRos
 
         private static void FinishClassGeneration(StreamWriter writer) {
             writer.WriteLine("} }");
+            writer.WriteLine("#nullable restore");
         }
 
         private List<PropertyData> AnalyzeProperties(GeneratorSyntaxContext context) {
