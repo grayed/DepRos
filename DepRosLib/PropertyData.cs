@@ -576,5 +576,14 @@ namespace DepRos
 
             writer.WriteLine();
         }
+
+        private string GenerateWpfChangedHandler() => PropertyChangedHandlerPrototype switch {
+            PropertyChangedHandlerPrototype.Unsupported => @"null",
+            PropertyChangedHandlerPrototype.Empty => $"(d, e) => (({Owner.Name})d).{PropertyChangedHandlerName}(({TypeName})e.NewValue)",
+            PropertyChangedHandlerPrototype.NewValueOnly => $"(d, e) => (({Owner.Name})d).{PropertyChangedHandlerName}(({TypeName})e.NewValue)",
+            PropertyChangedHandlerPrototype.OldAndNewValue => $"(d, e) => (({Owner.Name})d).{PropertyChangedHandlerName}(({TypeName})e.OldValue, ({TypeName})e.NewValue)",
+            PropertyChangedHandlerPrototype.EventArgs => $"(d, e) => (({Owner.Name})d).{PropertyChangedHandlerName}(new(({TypeName})e.OldValue, ({TypeName})e.NewValue))",
+            _ => throw new InvalidOperationException($"Unknown PropertyChangedHandlerPrototype value: {PropertyChangedHandlerPrototype}")
+        };
     }
 }
