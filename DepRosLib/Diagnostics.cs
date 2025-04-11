@@ -58,5 +58,10 @@ namespace DepRos
             "Inheritable properties requires FrameworkElement owner",
             "The {0} property is marked as inherited in {1} which is not a FrameworkElement descendant",
             "DepRos", DiagnosticSeverity.Error, true);
+
+        public static readonly DiagnosticDescriptor UnsupportedPropertyChangedHandler = new DiagnosticDescriptor("DR0012",
+            "Ignoring unsupported property changed handler prototype",
+            "The {0} method at {1} must accept either a single property type parameter, two such parameters, or a PropertyChangedEventArgs<{3}> object",
+            "DepRos", DiagnosticSeverity.Warning, true);
     }
 }

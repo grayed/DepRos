@@ -97,7 +97,7 @@ namespace DepRos
 
                         var text = Encoding.UTF8.GetString(ms.ToArray());
 #if DEBUG
-                        using (var w = new StreamWriter(@"C:\source\foo.txt")) {
+                        using (var w = new StreamWriter($"C:\\source\\depros\\{classData.Name}.txt")) {
                             w.WriteLine(text);
                             w.Flush();
                         }

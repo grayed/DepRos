@@ -16,3 +16,4 @@ DR0008  | DepRos   | Warning  | Diagnostics, [Documentation](https://learn.micro
 DR0009  | DepRos   | Warning  | Diagnostics
 DR0010  | DepRos   | Warning  | Diagnostics
 DR0011  | DepRos   | Error    | Diagnostics
+DR0012  | DepRos   | Warning  | Diagnostics

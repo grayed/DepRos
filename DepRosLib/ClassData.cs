@@ -182,9 +182,12 @@ namespace DepRos
                 if (classPropertiesByName.TryGetValue(name, out var propData))
                     propData.MarkHavingValidationCallback(method.GetLocation());
 
+            // FIXME in case of several handlers the first suitable one will be picked one, not the feature richest one
             foreach (var (name, method) in propertyChangedHandlersFoundFor)
-                if (classPropertiesByName.TryGetValue(name, out var propData))
-                    propData.MarkHavingChangedHandler(method.GetLocation());
+                if (classPropertiesByName.TryGetValue(name, out var propData)) {
+                    if (propData.FindPropertyChangedHandlerPrototype(method))
+                        break;
+                }
 
             // TODO: Warn about unused callbacks and default values?
 

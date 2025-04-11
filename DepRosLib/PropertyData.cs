@@ -8,6 +8,42 @@ using System.Text;
 
 namespace DepRos
 {
+    internal enum PropertyChangedHandlerPrototype {
+        Unsupported = 0,
+
+        /// <summary>
+        /// <code>OnSomePropertyChanged() { }</code>
+        /// </summary>
+        Empty,
+
+        /// <summary>
+        /// <code>OnSomePropertyChanged(T value) { }</code>
+        /// </summary>
+        NewValueOnly,
+
+        /// <summary>
+        /// <code>OnSomePropertyChanged(T oldValue, T newValue) { }</code>
+        /// </summary>
+        OldAndNewValue,
+
+        /// <summary>
+        /// <code>
+        /// class PropertyChangedEventArgs&lt;T&gt; : EventArgs {
+        ///   protected PropertyChangedEventArgs(T oldValue, T newValue) { OldValue = oldValue; NewValue = newValue; }
+        ///   T OldValue { get; }
+        ///   T NewValue { get; }
+        /// }
+        /// OnSomePropertyChanged(PropertyChangedEventArgs&lt;T&gt; ea) { }
+        /// 
+        /// class SomePropertyChangedEventArgs : PropertyChangedEventArgs&lt;Foo&gt; {
+        ///   SomePropertyChangedEventArgs(Foo oldSome, Foo newSome) : base(oldSome, newSome) { }
+        /// }
+        /// OnSomePropertyChanged(SomePropertyChangedEventArgs ea) { }
+        /// </code>
+        /// </summary>
+        EventArgs,
+    }
+
     internal class PropertyData {
         #region Parsing helpers
         private static bool IsAutoProperty(PropertyDeclarationSyntax prop) {
@@ -78,6 +114,44 @@ namespace DepRos
             if (nameSyntax is QualifiedNameSyntax || nameSyntax is AliasQualifiedNameSyntax)
                 return name == type.FullName;
             return name == type.Name;
+        }
+    
+        public bool FindPropertyChangedHandlerPrototype(MethodDeclarationSyntax method) {
+            var loc = method.GetLocation();
+
+            int paramsCount = method.ParameterList?.Parameters.Count ?? 0;
+            switch (paramsCount) {
+            case 0:
+                PropertyChangedHandlerPrototype = PropertyChangedHandlerPrototype.Empty;
+                break;
+
+            case 1:
+                if (method.ParameterList!.Parameters[0].Type!.ToString() == this.TypeName)
+                    PropertyChangedHandlerPrototype = PropertyChangedHandlerPrototype.NewValueOnly;
+                else
+                    PropertyChangedHandlerPrototype = PropertyChangedHandlerPrototype.EventArgs;    // XXX no checks for now
+                break;
+
+            case 2:
+                if (method.ParameterList!.Parameters[0].Type!.ToString() != this.TypeName ||
+                    method.ParameterList!.Parameters[1].Type!.ToString() != this.TypeName)
+                    return false;
+                PropertyChangedHandlerPrototype = PropertyChangedHandlerPrototype.OldAndNewValue;
+                break;
+
+            default:
+                return false;
+            }
+            PropertyChangedHandlerLocation = loc;
+            return true;
+        }
+
+        public void MarkHavingChangedHandler(Location location, PropertyChangedHandlerPrototype handlerPrototype) {
+            if (handlerPrototype == PropertyChangedHandlerPrototype.Unsupported)
+                PropertyChangedHandlerLocation = Location.None;
+            else
+                PropertyChangedHandlerLocation = location;
+            PropertyChangedHandlerPrototype = handlerPrototype;
         }
 
 #pragma warning disable CS8618      // constructors calling this one take care about Name and other properties
@@ -240,12 +314,17 @@ namespace DepRos
         /// Location of '<c>void On{this.Name}Changed(oldValue, newValue)</c>' method in source code.
         /// </summary>
         public Location? PropertyChangedHandlerLocation { get; private set; }
-        #endregion
 
-        #region Output properties
         /// <summary>
-        /// Type spec to be used for property declaration, e.g., <c>int?</c>.
+        /// Describes how to call property changed handler.
         /// </summary>
+        public PropertyChangedHandlerPrototype PropertyChangedHandlerPrototype { get; private set; }
+    #endregion
+
+    #region Output properties
+    /// <summary>
+    /// Type spec to be used for property declaration, e.g., <c>int?</c>.
+    /// </summary>
         public string TypeName { get; }
 
         /// <summary>
@@ -271,7 +350,6 @@ namespace DepRos
         public void MarkHavingDuplicate() => HasMultipleAttributes = true;
         public void MarkHavingDefaultValue(Location location) => DefaultValueLocation = location;
         public void MarkHavingWriteableDefaultValue() => IsDefaultValueIsWriteable = true;
-        public void MarkHavingChangedHandler(Location location) => PropertyChangedHandlerLocation = location;
         public void MarkHavingCoerceCallback(Location location) => CoerceCallbackLocation = location;
         public void MarkHavingValidationCallback(Location location) => ValidateCallbackLocation = location;
 
@@ -366,10 +444,7 @@ namespace DepRos
                 else
                     writer.Write($"default({TypeName})");
 
-                if (HasPropertyChangedHandler)
-                    writer.Write($", propertyChangedCallback: {PropertyChangedHandlerName}");
-                else
-                    writer.Write($", propertyChangedCallback: null");
+                writer.Write($", propertyChangedCallback: {GenerateWpfChangedHandler()}");
 
                 if (HasCoerceCallback && Owner.Toolkit == Toolkit.Wpf)
                     writer.Write($", coerceValueCallback: {CoerceCallbackName}");
@@ -385,10 +460,7 @@ namespace DepRos
                 else
                     writer.Write($"default({TypeName})");
 
-                if (HasPropertyChangedHandler)
-                    writer.Write($", propertyChangedCallback: {PropertyChangedHandlerName}");
-                else
-                    writer.Write($", propertyChangedCallback: null");
+                writer.Write($", propertyChangedCallback: {GenerateWpfChangedHandler()}");
 
                 if (HasCoerceCallback)
                     writer.Write($", coerceValueCallback: {CoerceCallbackName}");
@@ -414,10 +486,7 @@ namespace DepRos
                     writer.Write($", flags: {ns}.FrameworkPropertyMetadataOptions.None");
                 // TODO: other flags
 
-                if (HasPropertyChangedHandler)
-                    writer.Write($", propertyChangedCallback: {PropertyChangedHandlerName}");
-                else
-                    writer.Write($", propertyChangedCallback: null");
+                writer.Write($", propertyChangedCallback: {GenerateWpfChangedHandler()}");
 
                 if (HasCoerceCallback)
                     writer.Write($", coerceValueCallback: {CoerceCallbackName}");
