@@ -119,6 +119,18 @@ namespace DepRos
         public bool FindPropertyChangedHandlerPrototype(MethodDeclarationSyntax method) {
             var loc = method.GetLocation();
 
+#if DEBUG
+            if (!string.IsNullOrEmpty(DepRosGenerator.OutputDirectory)) {
+                using (var writer = new StreamWriter(Path.Combine(DepRosGenerator.OutputDirectory, $"ChangeHandlerProtoType-{Owner.Namespace}-{Owner.Name}.txt"), true))
+                    if (method.ParameterList is null)
+                        writer.WriteLine($"{method.Identifier.ValueText}: method.ParameterList is null");
+                    else {
+                        writer.WriteLine($"{method.Identifier.ValueText}: method.ParameterList has {method.ParameterList.Parameters.Count} items:");
+                        foreach (var param in method.ParameterList.Parameters)
+                            writer.WriteLine($"\t{param.Type?.ToString() ?? "?"} {param.Identifier.ValueText}");
+                    }
+            }
+#endif
             int paramsCount = method.ParameterList?.Parameters.Count ?? 0;
             switch (paramsCount) {
             case 0:
