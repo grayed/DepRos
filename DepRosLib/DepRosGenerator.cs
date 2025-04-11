@@ -26,7 +26,7 @@ namespace DepRos
         /// <summary>
         /// Directory where to save generated code, useful for debugging purposes.
         /// </summary>
-        public string? OutputDirectory { get; set; }
+        public static string? OutputDirectory { get; set; } = @"C:\source\depros";
 
         public void Initialize(GeneratorInitializationContext context) {
             context.RegisterForSyntaxNotifications(() => new DepRosSyntaxContextReciever());
