@@ -23,6 +23,11 @@ namespace DepRos
         //    return default;
         //}
 
+        /// <summary>
+        /// Directory where to save generated code, useful for debugging purposes.
+        /// </summary>
+        public string? OutputDirectory { get; set; }
+
         public void Initialize(GeneratorInitializationContext context) {
             context.RegisterForSyntaxNotifications(() => new DepRosSyntaxContextReciever());
         }
@@ -96,13 +101,15 @@ namespace DepRos
                         writer.Flush();
 
                         var text = Encoding.UTF8.GetString(ms.ToArray());
+                        var fileName = $"DepRos-{classData.Namespace}-{classData.Name}.g.cs";
 #if DEBUG
-                        using (var w = new StreamWriter($"C:\\source\\depros\\{classData.Name}.txt")) {
-                            w.WriteLine(text);
-                            w.Flush();
-                        }
+                        if (!string.IsNullOrEmpty(OutputDirectory))
+                            using (var w = new StreamWriter(Path.Combine(OutputDirectory, fileName))) {
+                                w.WriteLine(text);
+                                w.Flush();
+                            }
 #endif
-                        context.AddSource($"DepRos-{classData.Namespace}-{classData.Name}.g.cs", text);
+                        context.AddSource(fileName, text);
                     }
                 }
             }
